@@ -1,0 +1,33 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+<title>Dock</title>
+
+<link rel="stylesheet" href="/static/css/dock.css?v={{.Version}}">
+
+<script src="https://unpkg.com/lucide@latest"></script>
+
+</head>
+
+<body>
+
+<div class="container">
+
+{{template "content" .}}
+
+</div>
+
+<script src="/static/js/app.js?v={{.Version}}"></script>
+
+</body>
+
+</html>
+{{end}}

@@ -1,0 +1,9 @@
+server:
+  port: 8080
+  title: Dock
+
+actions:
+  - id: homepage
+    name: Homepage
+    icon: homepage.svg
+    script: homepage.sh

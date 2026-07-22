@@ -1,0 +1,18 @@
+title: Dock
+
+services:
+  - name: Homepage
+    docker: homepage
+    icon: "🌐"
+
+  - name: Vaultwarden
+    docker: vaultwarden
+    icon: "🔐"
+
+  - name: WireGuard
+    docker: wireguard
+    icon: "🛡"
+
+  - name: ntfy
+    docker: ntfy
+    icon: "🔔"

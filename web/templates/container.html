@@ -1,0 +1,68 @@
+{{define "container"}}
+
+<div class="berth" id="container-{{.ID}}">
+
+    <div class="berth-info">
+
+        <div class="berth-title">
+
+            {{if eq .State "running"}}
+                <span class="anchor running">⚓︎</span>
+            {{else}}
+                <span class="anchor stopped">⚓︎</span>
+            {{end}}
+
+            {{if .URL}}
+            <a class="name" href="{{.URL}}" target="_blank" rel="noopener">
+                {{.Name}}
+            </a>
+            {{else}}
+            <span class="name">
+                {{.Name}}
+            </span>
+            {{end}}
+
+        </div>
+
+        <div class="berth-status">
+            {{.Status}}
+        </div>
+
+    </div>
+
+    <div class="berth-actions">
+
+        <button
+            class="logs"
+            title="Logs"
+            onclick="openLogs('{{.ID}}')">
+            <i data-lucide="file-text"></i>
+        </button>
+
+        {{if eq .State "running"}}
+
+        <button
+            id="toggle-{{.ID}}"
+            class="stop"
+            title="Stop"
+            onclick="toggleContainer('{{.ID}}')">
+            <i data-lucide="square"></i>
+        </button>
+
+        {{else}}
+
+        <button
+            id="toggle-{{.ID}}"
+            class="start"
+            title="Start"
+            onclick="toggleContainer('{{.ID}}')">
+            <i data-lucide="play"></i>
+        </button>
+
+        {{end}}
+
+    </div>
+
+</div>
+
+{{end}}

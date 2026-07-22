@@ -1,0 +1,33 @@
+{{define "content"}}
+
+{{template "header" .}}
+
+<div class="dock-list">
+
+    <div id="updates">
+
+        <div class="berth" id="checking">
+
+            <div class="berth-info">
+
+                <div class="berth-title">
+                    Checking for updates...
+                </div>
+
+                <div class="berth-status">
+                    This may take a few seconds.
+                </div>
+
+            </div>
+
+            <div class="spinner"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="/static/js/maintenance.js?v={{.Version}}"></script>
+
+{{end}}

@@ -1,0 +1,28 @@
+# Dock - local/development files
+
+# Compiled binary
+/dock
+
+# Local backups
+/restore/
+/config/*.bak
+
+# Internal development notes
+/SESSION.md
+
+# Experimental development code
+/spikes/
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

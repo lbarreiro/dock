@@ -1,0 +1,29 @@
+# Local binary
+dock
+
+# Git
+.git
+.gitignore
+
+# Local backups
+restore/
+config/*.bak
+
+# Internal development notes
+SESSION.md
+
+# Experimental code
+spikes/
+
+# Local environment
+.env
+.env.*
+
+# Logs
+*.log
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

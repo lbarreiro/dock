@@ -1,0 +1,62 @@
+{{define "header"}}
+
+<header class="header">
+
+    <div class="brand">
+
+        <span class="logo">⚓︎</span>
+
+        <span class="title">Dock</span>
+
+        <span class="subtitle">
+            Docker Without The Noise.
+        </span>
+
+    </div>
+
+    {{if .MaintenancePage}}
+
+    <div class="header-maintenance-actions">
+
+        <button
+            type="button"
+            class="header-action"
+            onclick="window.location='{{.HeaderLink}}'">
+            ← Back
+        </button>
+
+        <span class="header-action-divider"></span>
+
+        <button
+            type="button"
+            id="cleanup-toggle"
+            class="header-cleanup-action"
+            title="Docker cleanup"
+            aria-label="Docker cleanup">
+            🧹
+        </button>
+
+    </div>
+
+    {{else}}
+
+    <button
+        class="header-action"
+        onclick="window.location='{{.HeaderLink}}'">
+        {{.HeaderAction}}
+    </button>
+
+    {{end}}
+
+</header>
+
+<div class="system-bar">
+    <span id="cpu"><i data-lucide="cpu"></i> CPU <span class="sys-value">{{printf "%.0f" .CPU}}%</span></span>
+    <span id="ram"><i data-lucide="memory-stick"></i> RAM <span class="sys-value">{{printf "%.0f" .RAM}}%</span></span>
+    <span id="temp"><i data-lucide="thermometer"></i> TMP <span class="sys-value">{{printf "%.0f" .Temp}}°C</span></span>
+    <span id="running"><i data-lucide="boxes"></i> RUN <span class="sys-value">{{.Running}}/{{.Total}}</span></span>
+
+    <span id="uptime"><i data-lucide="clock-3"></i> UPT <span class="sys-value">{{.Uptime}}</span></span>
+</div>
+
+{{end}}

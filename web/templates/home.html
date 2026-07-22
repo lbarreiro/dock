@@ -1,0 +1,98 @@
+{{define "content"}}
+
+{{template "header" .}}
+
+<div class="dock-list">
+
+{{range .Containers}}
+
+<div class="berth" id="container-{{.ID}}">
+
+    <div class="berth-info">
+
+        <div class="berth-title">
+
+            {{if eq .State "running"}}
+                <span id="anchor-{{.ID}}" class="anchor running">⚓︎</span>
+            {{else}}
+                <span id="anchor-{{.ID}}" class="anchor stopped">⚓︎</span>
+            {{end}}
+
+            {{if .URL}}
+            <a id="name-{{.ID}}" class="name" href="{{.URL}}" target="_blank" rel="noopener">
+                {{.Name}}
+            </a>
+            {{else}}
+            <span id="name-{{.ID}}" class="name">
+                {{.Name}}
+            </span>
+            {{end}}
+
+        </div>
+
+        <div id="status-{{.ID}}" class="berth-status">
+            {{.Status}}
+        </div>
+
+    </div>
+
+    <div class="berth-actions">
+
+        <button
+            class="logs"
+            title="Logs"
+            onclick="openLogs('{{.ID}}')">
+            <i data-lucide="file-text"></i>
+        </button>
+
+        {{if eq .State "running"}}
+
+        <button
+            id="toggle-{{.ID}}"
+            class="stop"
+            title="Stop"
+            onclick="toggleContainer('{{.ID}}')">
+            <i data-lucide="square"></i>
+        </button>
+
+        {{else}}
+
+        <button
+            id="toggle-{{.ID}}"
+            class="start"
+            title="Start"
+            onclick="toggleContainer('{{.ID}}')">
+            <i data-lucide="play"></i>
+        </button>
+
+        {{end}}
+
+    </div>
+
+</div>
+
+{{end}}
+
+</div>
+
+<div id="logsModal" class="modal">
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+
+            <span>Container Logs</span>
+
+            <button class="close" onclick="closeLogs()">
+                ✕
+            </button>
+
+        </div>
+
+        <pre id="logsContent">Loading...</pre>
+
+    </div>
+
+</div>
+
+{{end}}
