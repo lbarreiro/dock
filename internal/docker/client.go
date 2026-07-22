@@ -61,6 +61,7 @@ func (c *Client) ListContainers(ctx context.Context) ([]models.Container, error)
 		}
 
 		url := ""
+		image := item.Image
 
 		inspect, err := c.cli.ContainerInspect(
 			ctx,
@@ -68,17 +69,20 @@ func (c *Client) ListContainers(ctx context.Context) ([]models.Container, error)
 			client.ContainerInspectOptions{},
 		)
 
-		if err == nil &&
-			inspect.Container.Config != nil &&
-			inspect.Container.Config.Labels != nil {
+		if err == nil && inspect.Container.Config != nil {
+			if inspect.Container.Config.Image != "" {
+				image = inspect.Container.Config.Image
+			}
 
-			url = inspect.Container.Config.Labels["dock.url"]
+			if inspect.Container.Config.Labels != nil {
+				url = inspect.Container.Config.Labels["dock.url"]
+			}
 		}
 
 		containers = append(containers, models.Container{
 			ID:     id,
 			Name:   name,
-			Image:  item.Image,
+			Image:  image,
 			State:  string(item.State),
 			Status: item.Status,
 			URL:    url,
