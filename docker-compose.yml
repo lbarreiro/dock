@@ -1,6 +1,6 @@
 services:
   dock:
-    image: ${DOCK_IMAGE:-dock:test}
+    image: ${DOCK_IMAGE:-ghcr.io/lbarreiro/dock:latest}
     container_name: dock
     restart: unless-stopped
 

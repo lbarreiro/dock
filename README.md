@@ -102,9 +102,29 @@ Dock is particularly well suited for Raspberry Pi, home servers, mini PCs, NAS s
 
 ## Docker installation
 
-Dock will be distributed through GitHub Container Registry (GHCR).
+The official multi-architecture image is published on GitHub Container Registry:
 
-Installation instructions and a Docker Compose example will be added with the first public release.
+    ghcr.io/lbarreiro/dock:latest
+
+Supported architectures:
+
+- linux/amd64
+- linux/arm64
+
+Clone the repository:
+
+    git clone https://github.com/lbarreiro/dock.git
+    cd dock
+
+Set `COMPOSE_ROOT` to the directory containing your Docker Compose projects while preserving their absolute host paths.
+
+For example:
+
+    COMPOSE_ROOT=/home/user docker compose up -d
+
+Dock requires access to the Docker socket in order to manage the host Docker Engine.
+
+The Compose project directories are mounted read-only. This allows Dock to locate Compose files for controlled container updates without modifying them.
 
 ## Security
 
