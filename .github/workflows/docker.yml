@@ -6,6 +6,11 @@ on:
       - main
     tags:
       - "v*"
+    paths-ignore:
+      - "README.md"
+      - "docs/**"
+      - "LICENSE"
+      - "CONTRIBUTING.md"
 
 permissions:
   contents: read
