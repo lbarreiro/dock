@@ -10,6 +10,8 @@ No heavy management stack.
 No unnecessary background services.  
 Just the tools you need to manage your containers.
 
+![Dock dashboard](docs/images/dock-dashboard.png)
+
 ## Why Dock?
 
 Many container management platforms provide hundreds of features — and require significant resources to do it.
