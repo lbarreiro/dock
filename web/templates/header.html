@@ -14,6 +14,20 @@
 
     </div>
 
+    <div class="header-global-actions">
+
+        <button
+            type="button"
+            id="emergency-action"
+            class="header-emergency-action"
+            title="Emergency mode"
+            aria-label="Emergency mode"
+            onclick="activateEmergencyMode()">
+            <i data-lucide="door-open"></i>
+        </button>
+
+        <span class="header-action-divider"></span>
+
     {{if .MaintenancePage}}
 
     <div class="header-maintenance-actions">
@@ -47,6 +61,8 @@
     </button>
 
     {{end}}
+
+    </div>
 
 </header>
 

@@ -13,12 +13,14 @@ func (s *Server) RegisterRoutes() {
 	systemHandler := api.NewSystemHandler(s.docker)
 	updateHandler := api.NewUpdateHandler(s.docker)
 	cleanupHandler := api.NewCleanupHandler()
+	emergencyHandler := api.NewEmergencyHandler(s.docker)
 
 	s.router.Get("/api/containers", containerHandler.List)
 	s.router.Get("/api/system", systemHandler.Get)
 	s.router.Get("/api/updates", updateHandler.Get)
 	s.router.Get("/api/cleanup", cleanupHandler.Get)
 	s.router.Post("/api/cleanup", cleanupHandler.Clean)
+	s.router.Post("/api/emergency", emergencyHandler.Activate)
 	s.router.Post("/api/update/{id}", updateHandler.Update)
 	s.router.Get("/api/update/{id}/status", updateHandler.JobStatus)
 

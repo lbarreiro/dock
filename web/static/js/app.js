@@ -212,3 +212,53 @@ async function loadUpdates() {
 
 document.addEventListener("DOMContentLoaded", loadUpdates);
 
+
+
+async function activateEmergencyMode() {
+    const confirmed = window.confirm(
+        "Ativar modo de emergência?\n\n" +
+        "Todos os containers não essenciais serão parados. " +
+        "Dock, cloudflared, ntfy e whatssend ficarão a funcionar."
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    const button = document.getElementById("emergency-action");
+    const original = button ? button.innerHTML : "";
+
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<div class="spinner"></div>';
+    }
+
+    try {
+        const response = await fetch("/api/emergency", { method: "POST" });
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || "Emergency mode failed");
+        }
+
+        let message =
+            "Modo de emergência ativo.\n\n" +
+            result.stopped + " container(s) parado(s).\n" +
+            result.essential_running + " serviço(s) essencial(is) a funcionar.";
+
+        if (result.errors && result.errors.length) {
+            message += "\n\nAvisos:\n" + result.errors.join("\n");
+        }
+
+        window.alert(message);
+        window.location.reload();
+    } catch (error) {
+        window.alert("Não foi possível ativar o modo de emergência.\n\n" + error.message);
+
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = original;
+            lucide.createIcons();
+        }
+    }
+}

@@ -726,3 +726,64 @@ a.name:active{
     opacity: 0.35;
     cursor: default;
 }
+
+
+/* Emergency action — discreet, shared across all pages */
+.header-global-actions {
+    margin-left:auto;
+    align-self:center;
+    display:flex;
+    align-items:center;
+    flex-wrap:nowrap;
+    height:44px;
+    white-space:nowrap;
+}
+
+.header-global-actions > .header-action {
+    margin-left:0;
+    align-self:center;
+}
+
+.header-emergency-action {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 40px;
+    width:40px;
+    height:44px;
+    margin:0;
+    padding:0;
+    border:0;
+    background:transparent;
+    color:var(--accent);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+}
+
+.header-emergency-action svg {
+    width:20px;
+    height:20px;
+}
+
+.header-emergency-action:hover,
+.header-emergency-action:focus,
+.header-emergency-action:active {
+    color:#93c5fd;
+}
+
+.header-emergency-action:active {
+    transform:scale(.92);
+}
+
+.header-emergency-action:disabled {
+    cursor:default;
+    opacity:.65;
+}
+
+.header-global-actions > .header-action-divider {
+    margin:0 8px 0 0;
+}
+
+.header-global-actions .header-maintenance-actions {
+    margin-left:0;
+}
