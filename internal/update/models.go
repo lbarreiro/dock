@@ -3,15 +3,18 @@ package update
 type Status string
 
 const (
-	StatusChecking Status = "checking"
-	StatusUpdate   Status = "update"
-	StatusCurrent  Status = "current"
-	StatusError    Status = "error"
+	StatusChecking    Status = "checking"
+	StatusUpdate      Status = "update"
+	StatusCurrent     Status = "current"
+	StatusError       Status = "error"
+	StatusUnsupported Status = "unsupported"
 )
 
 type Result struct {
-	Name     string `json:"name"`
-	Provider string `json:"provider"`
+	Name      string `json:"name"`
+	CanUpdate bool   `json:"can_update"`
+	Message   string `json:"message,omitempty"`
+	Provider  string `json:"provider"`
 
 	Image string `json:"-"`
 

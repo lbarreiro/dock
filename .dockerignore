@@ -27,3 +27,7 @@ spikes/
 Thumbs.db
 .vscode/
 .idea/
+
+# Audit evidence and frontend tests
+audit/
+web/tests/

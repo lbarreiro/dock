@@ -5,8 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
-	"os/exec"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -55,38 +54,12 @@ func (c *Client) ListContainers(ctx context.Context) ([]models.Container, error)
 			name = strings.TrimPrefix(item.Names[0], "/")
 		}
 
-		id := item.ID
-		if len(id) > 12 {
-			id = id[:12]
+		ctn, err := c.Container(ctx, item.ID)
+		if err != nil {
+			return nil, fmt.Errorf("inspect %s: %w", name, err)
 		}
-
-		url := ""
-		image := item.Image
-
-		inspect, err := c.cli.ContainerInspect(
-			ctx,
-			item.ID,
-			client.ContainerInspectOptions{},
-		)
-
-		if err == nil && inspect.Container.Config != nil {
-			if inspect.Container.Config.Image != "" {
-				image = inspect.Container.Config.Image
-			}
-
-			if inspect.Container.Config.Labels != nil {
-				url = inspect.Container.Config.Labels["dock.url"]
-			}
-		}
-
-		containers = append(containers, models.Container{
-			ID:     id,
-			Name:   name,
-			Image:  image,
-			State:  string(item.State),
-			Status: item.Status,
-			URL:    url,
-		})
+		ctn.Status = item.Status
+		containers = append(containers, ctn)
 
 	}
 
@@ -113,19 +86,33 @@ func (c *Client) ListContainers(ctx context.Context) ([]models.Container, error)
 }
 
 func (c *Client) StartContainer(ctx context.Context, id string) error {
-
-	_, err := c.cli.ContainerStart(ctx, id, client.ContainerStartOptions{})
-
+	ctn, err := c.Container(ctx, id)
+	if err != nil {
+		return err
+	}
+	if ctn.State == "paused" {
+		_, err = c.cli.ContainerUnpause(ctx, id, client.ContainerUnpauseOptions{})
+		return err
+	}
+	if ctn.State == "running" || ctn.State == "restarting" {
+		return nil
+	}
+	_, err = c.cli.ContainerStart(ctx, id, client.ContainerStartOptions{})
 	return err
-
 }
 
 func (c *Client) StopContainer(ctx context.Context, id string) error {
-
-	_, err := c.cli.ContainerStop(ctx, id, client.ContainerStopOptions{})
-
+	ctn, err := c.Container(ctx, id)
+	if err != nil {
+		return err
+	}
+	if ctn.State == "paused" {
+		if _, err = c.cli.ContainerUnpause(ctx, id, client.ContainerUnpauseOptions{}); err != nil {
+			return err
+		}
+	}
+	_, err = c.cli.ContainerStop(ctx, id, client.ContainerStopOptions{})
 	return err
-
 }
 
 func (c *Client) RestartContainer(ctx context.Context, id string) error {
@@ -176,136 +163,6 @@ func (c *Client) ComposeService(ctx context.Context, id string) (string, error) 
 
 }
 
-func (c *Client) ComposeUpdate(ctx context.Context, id string) error {
-
-	// Guardar o estado original do container.
-	inspect, err := c.cli.ContainerInspect(
-		ctx,
-		id,
-		client.ContainerInspectOptions{},
-	)
-	if err != nil {
-		return err
-	}
-
-	wasRunning := false
-
-	if inspect.Container.State != nil {
-		wasRunning = inspect.Container.State.Running
-	}
-
-	dir, err := c.ComposeWorkingDir(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	service, err := c.ComposeService(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	if dir == "" {
-		return fmt.Errorf("compose working directory not found")
-	}
-
-	if service == "" {
-		return fmt.Errorf("compose service not found")
-	}
-
-	log.Printf(
-		"Updating %s (service=%s, running=%t)",
-		id,
-		service,
-		wasRunning,
-	)
-
-	// Atualizar apenas a imagem do serviço selecionado.
-	pull := exec.CommandContext(
-		ctx,
-		"docker",
-		"compose",
-		"pull",
-		service,
-	)
-
-	pull.Dir = dir
-
-	out, err := pull.CombinedOutput()
-
-	if err != nil {
-		log.Printf("Pull failed for %s: %s", id, string(out))
-		return fmt.Errorf("docker compose pull: %w", err)
-	}
-
-	// Recriar/arrancar o serviço com a nova imagem.
-	up := exec.CommandContext(
-		ctx,
-		"docker",
-		"compose",
-		"up",
-		"-d",
-		service,
-	)
-
-	up.Dir = dir
-
-	out, err = up.CombinedOutput()
-
-	if err != nil {
-
-		log.Printf("Compose up failed for %s: %s", id, string(out))
-
-		// Se estava parado, tentar preservar o estado original
-		// mesmo perante uma falha parcial no compose up.
-		if !wasRunning {
-
-			stop := exec.CommandContext(
-				context.Background(),
-				"docker",
-				"compose",
-				"stop",
-				service,
-			)
-
-			stop.Dir = dir
-			_, _ = stop.CombinedOutput()
-		}
-
-		return fmt.Errorf("docker compose up: %w", err)
-	}
-
-	// Se estava parado antes da atualização,
-	// voltar a pará-lo depois da recriação.
-	if !wasRunning {
-
-		log.Printf(
-			"%s was stopped before update; restoring stopped state",
-			id,
-		)
-
-		stop := exec.CommandContext(
-			ctx,
-			"docker",
-			"compose",
-			"stop",
-			service,
-		)
-
-		stop.Dir = dir
-
-		out, err = stop.CombinedOutput()
-
-		if err != nil {
-			log.Printf("Compose stop failed for %s: %s", id, string(out))
-			return fmt.Errorf("docker compose stop: %w", err)
-		}
-
-		log.Printf("%s restored to stopped state", id)
-	}
-
-	return nil
-}
-
 func (c *Client) ContainerLogs(ctx context.Context, id string, tail int) (io.ReadCloser, error) {
 
 	reader, err := c.cli.ContainerLogs(ctx, id, client.ContainerLogsOptions{
@@ -326,4 +183,32 @@ func (c *Client) ContainerLogs(ctx context.Context, id string, tail int) (io.Rea
 
 	return io.NopCloser(bytes.NewReader(buf.Bytes())), nil
 
+}
+
+func (c *Client) Container(ctx context.Context, id string) (models.Container, error) {
+	result, err := c.cli.ContainerInspect(ctx, id, client.ContainerInspectOptions{})
+	if err != nil {
+		return models.Container{}, err
+	}
+	in := result.Container
+	if in.Config == nil || in.State == nil {
+		return models.Container{}, fmt.Errorf("incomplete inspect for %s", id)
+	}
+	name := strings.TrimPrefix(in.Name, "/")
+	labels := in.Config.Labels
+	state := string(in.State.Status)
+	if in.State.Paused {
+		state = "paused"
+	} else if in.State.Restarting {
+		state = "restarting"
+	}
+	hostname, _ := os.Hostname()
+	self := name == "dock" || (labels["com.docker.compose.service"] == "dock" && labels["com.docker.compose.project"] == "dock") || (len(hostname) >= 12 && strings.HasPrefix(in.ID, hostname))
+	hasHealth := in.Config.Healthcheck != nil && len(in.Config.Healthcheck.Test) > 0 && in.Config.Healthcheck.Test[0] != "NONE"
+	health := ""
+	if in.State.Health != nil {
+		health = string(in.State.Health.Status)
+		hasHealth = true
+	}
+	return models.Container{ID: in.ID, Name: name, Image: in.Config.Image, ImageID: in.Image, State: state, Status: state, URL: labels["dock.url"], Service: labels["com.docker.compose.service"], Project: labels["com.docker.compose.project"], Health: health, HasHealthcheck: hasHealth, Self: self}, nil
 }
