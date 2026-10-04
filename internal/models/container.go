@@ -1,14 +1,27 @@
 package models
 
-// Container representa um contentor Docker.
-//
-// Esta estrutura pertence ao Dock e nunca depende
-// da SDK oficial do Docker.
 type Container struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Image  string `json:"image"`
-	State  string `json:"state"`
-	Status string `json:"status"`
-	URL    string `json:"url"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Image          string `json:"image"`
+	ImageID        string `json:"image_id"`
+	State          string `json:"state"`
+	Status         string `json:"status"`
+	URL            string `json:"url"`
+	Service        string `json:"service"`
+	Project        string `json:"project"`
+	Health         string `json:"health,omitempty"`
+	HasHealthcheck bool   `json:"has_healthcheck"`
+	Self           bool   `json:"self"`
+}
+
+func (c Container) Ready() bool {
+	return c.State == "running" && (!c.HasHealthcheck || c.Health == "healthy")
+}
+
+type Image struct {
+	ID           string
+	OS           string
+	Architecture string
+	Variant      string
 }

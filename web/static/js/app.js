@@ -1,4 +1,4 @@
-lucide.createIcons();
+if (window.lucide) lucide.createIcons();
 
 let last = {
     cpu: "",
@@ -38,7 +38,7 @@ async function refreshSystem() {
 
         if (running !== last.running) {
             document.getElementById("running").innerHTML = `<i data-lucide="boxes"></i> RUN <span class="sys-value">${running}</span>`;
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
             last.running = running;
         }
 
@@ -88,7 +88,7 @@ async function toggleContainer(id) {
 
             button.disabled = false;
             button.innerHTML = original;
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
 
         }
 
@@ -96,7 +96,7 @@ async function toggleContainer(id) {
 
         button.disabled = false;
         button.innerHTML = original;
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
 
     }
 
@@ -138,7 +138,7 @@ function updateContainer(c) {
 
     button.disabled = false;
 
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
 }
 
 async function openLogs(id) {
@@ -198,22 +198,6 @@ refreshSystem();
 setInterval(refreshSystem, 3000);
 
 
-async function loadUpdates() {
-
-    if (!document.getElementById("updates")) {
-        return;
-    }
-
-    const response = await fetch("/api/updates");
-    const data = await response.json();
-
-    console.log("Updates API:", data);
-}
-
-document.addEventListener("DOMContentLoaded", loadUpdates);
-
-
-
 async function activateEmergencyMode() {
     const confirmed = window.confirm(
         "Ativar modo de emergência?\n\n" +
@@ -235,14 +219,16 @@ async function activateEmergencyMode() {
 
     try {
         const response = await fetch("/api/emergency", { method: "POST" });
-        const result = await response.json();
+        const text = await response.text();
+        let result;
+        try { result = JSON.parse(text); } catch (_) { throw new Error(text || "Unable to confirm emergency result"); }
 
         if (!response.ok) {
-            throw new Error(result.error || "Emergency mode failed");
+            throw new Error(result.error || (result.errors || []).join("\n") || "Emergency mode failed");
         }
 
         let message =
-            "Modo de emergência ativo.\n\n" +
+            (result.status === "completed" ? "Modo de emergência ativo.\n\n" : "Modo de emergência parcialmente concluído.\n\n") +
             result.stopped + " container(s) parado(s).\n" +
             result.essential_running + " serviço(s) essencial(is) a funcionar.";
 
@@ -253,12 +239,12 @@ async function activateEmergencyMode() {
         window.alert(message);
         window.location.reload();
     } catch (error) {
-        window.alert("Não foi possível ativar o modo de emergência.\n\n" + error.message);
+        window.alert("Não foi possível confirmar a conclusão da emergência.\nVerifica o estado dos serviços antes de repetir.\n\n" + error.message);
 
         if (button) {
             button.disabled = false;
             button.innerHTML = original;
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         }
     }
 }

@@ -1,15 +1,40 @@
 package update
 
-import "strings"
+import (
+	"fmt"
+	"github.com/distribution/reference"
+)
 
-func SplitImage(image string) (string, string) {
+type Reference struct {
+	Registry, Repository, Version string
+	Pinned                        bool
+}
 
-	lastSlash := strings.LastIndex(image, "/")
-	lastColon := strings.LastIndex(image, ":")
-
-	if lastColon > lastSlash {
-		return image[:lastColon], image[lastColon+1:]
+func ParseImage(image string) (Reference, error) {
+	named, err := reference.ParseNormalizedNamed(image)
+	if err != nil {
+		return Reference{}, err
 	}
-
-	return image, "latest"
+	ref := Reference{Registry: reference.Domain(named), Repository: reference.Path(named), Version: "latest"}
+	if tagged, ok := named.(reference.Tagged); ok {
+		ref.Version = tagged.Tag()
+	}
+	if digested, ok := named.(reference.Digested); ok {
+		ref.Version = digested.Digest().String()
+		ref.Pinned = true
+	}
+	if ref.Registry == "index.docker.io" {
+		ref.Registry = "docker.io"
+	}
+	if ref.Repository == "" {
+		return Reference{}, fmt.Errorf("missing image repository")
+	}
+	return ref, nil
+}
+func SplitImage(image string) (string, string) {
+	ref, err := ParseImage(image)
+	if err != nil {
+		return image, ""
+	}
+	return ref.Repository, ref.Version
 }

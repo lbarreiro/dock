@@ -1,117 +1,121 @@
 package api
 
 import (
-    "encoding/json"
-    "io"
-    "net/http"
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"time"
 
-    "dock/internal/docker"
+	"dock/internal/docker"
 
-    "github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5"
 )
 
 type ContainerHandler struct {
-    docker *docker.Client
+	docker *docker.Client
 }
 
 func NewContainerHandler(d *docker.Client) *ContainerHandler {
-    return &ContainerHandler{
-        docker: d,
-    }
+	return &ContainerHandler{
+		docker: d,
+	}
 }
 
 func (h *ContainerHandler) List(w http.ResponseWriter, r *http.Request) {
 
-    containers, err := h.docker.ListContainers(r.Context())
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+	containers, err := h.docker.ListContainers(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 
-    encoder := json.NewEncoder(w)
-    encoder.SetIndent("", "  ")
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
 
-    if err := encoder.Encode(containers); err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-    }
+	if err := encoder.Encode(containers); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
 }
 
 func (h *ContainerHandler) Get(w http.ResponseWriter, r *http.Request) {
 
-    id := chi.URLParam(r, "id")
+	id := chi.URLParam(r, "id")
 
-    containers, err := h.docker.ListContainers(r.Context())
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+	containers, err := h.docker.ListContainers(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-    for _, c := range containers {
+	for _, c := range containers {
 
-        if c.ID != id {
-            continue
-        }
+		if c.ID != id {
+			continue
+		}
 
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(c)
-        return
-    }
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(c)
+		return
+	}
 
-    http.NotFound(w, r)
+	http.NotFound(w, r)
 
 }
 
 func (h *ContainerHandler) Toggle(w http.ResponseWriter, r *http.Request) {
 
-    id := chi.URLParam(r, "id")
+	id := chi.URLParam(r, "id")
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
 
-    containers, err := h.docker.ListContainers(r.Context())
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+	containers, err := h.docker.ListContainers(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-    for _, c := range containers {
+	for _, c := range containers {
 
-        if c.ID != id {
-            continue
-        }
+		if c.ID != id {
+			continue
+		}
 
-        if c.State == "running" {
-            err = h.docker.StopContainer(r.Context(), id)
-        } else {
-            err = h.docker.StartContainer(r.Context(), id)
-        }
+		if c.State == "running" {
+			err = h.docker.StopContainer(ctx, id)
+		} else {
+			err = h.docker.StartContainer(ctx, id)
+		}
 
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-        w.WriteHeader(http.StatusNoContent)
-        return
-    }
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 
-    http.NotFound(w, r)
+	http.NotFound(w, r)
 
 }
 
 func (h *ContainerHandler) Logs(w http.ResponseWriter, r *http.Request) {
 
-    id := chi.URLParam(r, "id")
+	id := chi.URLParam(r, "id")
 
-    reader, err := h.docker.ContainerLogs(r.Context(), id, 300)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-    defer reader.Close()
+	reader, err := h.docker.ContainerLogs(r.Context(), id, 300)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer reader.Close()
 
-    w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
-    io.Copy(w, reader)
+	io.Copy(w, reader)
 
 }

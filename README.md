@@ -175,3 +175,15 @@ See `LICENSE` for licensing information.
 ---
 
 **Dock — Docker management without the weight.**
+
+## Operation safety
+
+Docker mutations are serialized: updates, cleanup, emergency shutdown and start/stop cannot overlap. Updates use the original Compose project and file labels, validate the configuration, preserve stopped services without starting dependencies, and verify the applied image and readiness. Update tracking survives page reloads and temporary proxy disconnects; an unknown outcome requires checking state before another request.
+
+Dock itself must be updated from the host (`docker compose pull dock` followed by `docker compose up -d --no-deps dock` in its project directory), since a process cannot safely supervise its own container replacement.
+
+Emergency mode preserves exactly Dock, cloudflared, whatssend and ntfy. Before stopping any other container, it confirms all four are running and, when a healthcheck is configured, healthy. Missing, ambiguous or unready essentials block shutdown. Readiness is checked again during shutdown; paused and restarting nonessential containers are also stopped. There is no automatic restoration or rollback.
+
+Image checks compare the running container's image ID with the remote config digest for its platform, including Docker Hub and GHCR multi-architecture images.
+
+CI runs Go, frontend and isolated Docker Compose integration tests before publishing the image.

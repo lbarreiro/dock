@@ -1,18 +1,16 @@
 package update
 
-import "strings"
-
 func Provider(image string) string {
-
-	switch {
-
-	case strings.HasPrefix(image, "ghcr.io/"):
-		return "GHCR"
-
-	case strings.HasPrefix(image, "quay.io/"):
-		return "Quay"
-
-	default:
+	ref, err := ParseImage(image)
+	if err != nil {
+		return "Unsupported"
+	}
+	switch ref.Registry {
+	case "docker.io":
 		return "Docker Hub"
+	case "ghcr.io":
+		return "GHCR"
+	default:
+		return "Unsupported"
 	}
 }

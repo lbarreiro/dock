@@ -1,11 +1,13 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type CleanupHandler struct{}
@@ -192,7 +194,9 @@ type CleanupResult struct {
 }
 
 func (h *CleanupHandler) Clean(w http.ResponseWriter, r *http.Request) {
-	if out, err := exec.Command(
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	if out, err := exec.CommandContext(ctx,
 		"docker",
 		"image",
 		"prune",
@@ -207,7 +211,7 @@ func (h *CleanupHandler) Clean(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if out, err := exec.Command(
+	if out, err := exec.CommandContext(ctx,
 		"docker",
 		"builder",
 		"prune",

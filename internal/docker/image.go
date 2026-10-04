@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"dock/internal/models"
 	"strings"
 )
 
@@ -23,4 +24,11 @@ func (c *Client) ImageDigest(ctx context.Context, image string) (string, error) 
 	}
 
 	return digest, nil
+}
+func (c *Client) ImageInfo(ctx context.Context, id string) (models.Image, error) {
+	in, err := c.cli.ImageInspect(ctx, id)
+	if err != nil {
+		return models.Image{}, err
+	}
+	return models.Image{ID: in.ID, OS: in.Os, Architecture: in.Architecture, Variant: in.Variant}, nil
 }
