@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -81,9 +82,10 @@ func (f *fakeDocker) StopContainer(_ context.Context, id string) error {
 func (f *fakeDocker) RestartContainer(context.Context, string) error            { return nil }
 func (f *fakeDocker) ComposeWorkingDir(context.Context, string) (string, error) { return "", nil }
 func (f *fakeDocker) ImageDigest(context.Context, string) (string, error)       { return "", nil }
-func (f *fakeDocker) ImageInfo(context.Context, string) (models.Image, error) {
-	return models.Image{}, nil
+func (f *fakeDocker) ImageInfo(_ context.Context, id string) (models.Image, error) {
+	return models.Image{ID: id, OS: "linux", Architecture: "amd64"}, nil
 }
+
 func (f *fakeDocker) ContainerLogs(context.Context, string, int) (io.ReadCloser, error) {
 	return nil, nil
 }
@@ -275,5 +277,54 @@ func TestUnknownJobCannotPretendCompleted(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &result)
 	if result["status"] != "unknown" {
 		t.Fatal(result)
+	}
+}
+
+func TestEmergencyWaitsForHealthBeforeStopping(t *testing.T) {
+	f := fixture()
+	c := f.containers["ntfy"]
+	c.HasHealthcheck = true
+	c.Health = "starting"
+	f.containers["ntfy"] = c
+	h := NewEmergencyHandler(f)
+	h.healthTimeout = 2 * time.Second
+	go func() {
+		time.Sleep(20 * time.Millisecond)
+		f.mu.Lock()
+		c := f.containers["ntfy"]
+		c.Health = "healthy"
+		f.containers["ntfy"] = c
+		f.mu.Unlock()
+	}()
+	w := httptest.NewRecorder()
+	h.Activate(w, httptest.NewRequest("POST", "/", nil))
+	if w.Code != 200 || len(f.stopped) != 1 {
+		t.Fatal(w.Body.String())
+	}
+}
+
+type imageTransport func(*http.Request) (*http.Response, error)
+
+func (f imageTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+func TestUpdateCheckUsesActualContainerImageInsteadOfLocalTag(t *testing.T) {
+	f := fixture()
+	f.containers = map[string]models.Container{"app": {ID: "app", Name: "app", Image: "alpine:latest", ImageID: "sha256:old", Project: "app", Service: "app", State: "running"}}
+	old := http.DefaultTransport
+	defer func() { http.DefaultTransport = old }()
+	http.DefaultTransport = imageTransport(func(r *http.Request) (*http.Response, error) {
+		body := `{"config":{"digest":"sha256:new"}}`
+		if r.URL.Path == "/token" {
+			body = `{"token":"test"}`
+		}
+		return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}, nil
+	})
+	w := httptest.NewRecorder()
+	NewUpdateHandler(f, NewOperations()).Get(w, httptest.NewRequest("GET", "/api/updates", nil))
+	var data UpdateResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &data); err != nil {
+		t.Fatal(err)
+	}
+	if len(data.Containers) != 1 || data.Containers[0].Status != "update" {
+		t.Fatal(w.Body.String())
 	}
 }

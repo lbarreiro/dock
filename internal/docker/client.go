@@ -203,7 +203,7 @@ func (c *Client) Container(ctx context.Context, id string) (models.Container, er
 		state = "restarting"
 	}
 	hostname, _ := os.Hostname()
-	self := name == "dock" || (labels["com.docker.compose.service"] == "dock" && labels["com.docker.compose.project"] == "dock") || (len(hostname) >= 12 && strings.HasPrefix(in.ID, hostname))
+	self := name == "dock" || labels["com.docker.compose.service"] == "dock" || (len(hostname) >= 12 && strings.HasPrefix(in.ID, hostname))
 	hasHealth := in.Config.Healthcheck != nil && len(in.Config.Healthcheck.Test) > 0 && in.Config.Healthcheck.Test[0] != "NONE"
 	health := ""
 	if in.State.Health != nil {
