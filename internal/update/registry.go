@@ -148,3 +148,21 @@ func registryDigest(ctx context.Context, image string) (string, error) {
 	}
 	return digest, nil
 }
+
+// AppliedConfigDigest normalizes Docker's two image stores to a config digest.
+// Classic image IDs are config digests; containerd IDs identify manifests/indexes.
+// Resolve the immutable descriptor of the applied image, never its mutable tag.
+func AppliedConfigDigest(ctx context.Context, image string, local models.Image) (string, error) {
+	if local.ManifestDigest == "" {
+		if local.ID == "" {
+			return "", fmt.Errorf("applied image has no identity")
+		}
+		return local.ID, nil
+	}
+	ref, err := ParseImage(image)
+	if err != nil {
+		return "", err
+	}
+	applied := ref.Registry + "/" + ref.Repository + "@" + local.ManifestDigest
+	return ConfigDigest(ctx, applied, local)
+}

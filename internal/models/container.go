@@ -20,8 +20,9 @@ func (c Container) Ready() bool {
 }
 
 type Image struct {
-	ID           string
-	OS           string
-	Architecture string
-	Variant      string
+	ManifestDigest string
+	ID             string
+	OS             string
+	Architecture   string
+	Variant        string
 }

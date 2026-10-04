@@ -169,7 +169,9 @@ func (h *UpdateHandler) Get(w http.ResponseWriter, r *http.Request) {
 			remote, e = update.ConfigDigest(ctx, c.Image, local)
 			if e == nil {
 				result.Status = update.StatusUpdate
-				if local.ID == remote {
+				var applied string
+				applied, e = update.AppliedConfigDigest(ctx, c.Image, local)
+				if e == nil && applied == remote {
 					result.Status = update.StatusCurrent
 				}
 			}

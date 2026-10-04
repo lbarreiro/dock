@@ -30,5 +30,9 @@ func (c *Client) ImageInfo(ctx context.Context, id string) (models.Image, error)
 	if err != nil {
 		return models.Image{}, err
 	}
-	return models.Image{ID: in.ID, OS: in.Os, Architecture: in.Architecture, Variant: in.Variant}, nil
+	info := models.Image{ID: in.ID, OS: in.Os, Architecture: in.Architecture, Variant: in.Variant}
+	if in.Descriptor != nil {
+		info.ManifestDigest = in.Descriptor.Digest.String()
+	}
+	return info, nil
 }

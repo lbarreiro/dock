@@ -86,3 +86,32 @@ func TestUnsupportedRegistryExplicit(t *testing.T) {
 		t.Fatal("misclassified")
 	}
 }
+
+func TestAppliedConfigDigestClassicStore(t *testing.T) {
+	digest, err := AppliedConfigDigest(context.Background(), "alpine:latest", models.Image{ID: "sha256:config"})
+	if err != nil || digest != "sha256:config" {
+		t.Fatal(digest, err)
+	}
+}
+
+func TestAppliedConfigDigestContainerdUsesImmutableIndex(t *testing.T) {
+	old := registryClient
+	defer func() { registryClient = old }()
+	registryClient = &http.Client{Transport: roundTrip(func(r *http.Request) (*http.Response, error) {
+		switch r.URL.Path {
+		case "/token":
+			return response(200, `{"token":"test"}`), nil
+		case "/v2/library/alpine/manifests/sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa":
+			return response(200, `{"manifests":[{"digest":"sha256:arm","platform":{"os":"linux","architecture":"arm64"}},{"digest":"sha256:amd","platform":{"os":"linux","architecture":"amd64"}}]}`), nil
+		case "/v2/library/alpine/manifests/sha256:arm":
+			return response(200, `{"config":{"digest":"sha256:installed-config"}}`), nil
+		default:
+			t.Fatalf("must resolve installed digest, never latest: %s", r.URL)
+			return nil, nil
+		}
+	})}
+	digest, err := AppliedConfigDigest(context.Background(), "alpine:latest", models.Image{ID: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ManifestDigest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", OS: "linux", Architecture: "arm64"})
+	if err != nil || digest != "sha256:installed-config" {
+		t.Fatal(digest, err)
+	}
+}

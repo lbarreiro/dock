@@ -46,13 +46,13 @@ async function loadUpdates() {
         const pending = pendingUpdates();
         for (const item of data.containers) {
             const tracked = pending[item.name];
-            let text = {current:"Current", error:"Unable to check", unsupported:"Unsupported"}[item.status] || "Update available";
+            let text = {current:"Current", error:"Unable to check", unsupported:"Unsupported", checking:"Checking", update:""}[item.status] ?? "Unable to check";
             let action = "";
             if (tracked || (item.status === "update" && item.can_update)) {
                 action = `<button type="button" class="update-button" data-name="${escapeHTML(item.name)}" data-action="update">Update</button>`;
             }
             if (item.status === "update" && !item.can_update) text = item.message || "Host update required";
-            root.insertAdjacentHTML("beforeend", `<div class="berth"><div class="berth-info"><div class="berth-title">${escapeHTML(item.name)}</div></div><div class="maintenance-actions"><div class="berth-state status-${escapeHTML(item.status)}" title="${escapeHTML(item.message)}">${escapeHTML(text)}</div>${action}</div></div>`);
+            root.insertAdjacentHTML("beforeend", `<div class="berth"><div class="berth-info"><div class="berth-title">${escapeHTML(item.name)}</div></div><div class="maintenance-actions"><div class="berth-state status-${escapeHTML(item.status)}" title="${escapeHTML(item.message)}">${text ? `<span class="status-dot">&bull;</span> ${escapeHTML(text)}` : ""}</div>${action}</div></div>`);
         }
         root.querySelectorAll(".update-button").forEach(button => {
             const name = button.dataset.name;
